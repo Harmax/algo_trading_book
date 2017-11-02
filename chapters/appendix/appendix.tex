@@ -1,0 +1,1780 @@
+\chapter*{Appendix A: Partial R Codes}
+\noindent
+\begin{small}
+\textbf{Chapter 2: Exercise 3}
+\begin{lstlisting}
+###
+##FORD AGGREGATE  BY 5 MINS
+ford=read.csv("ford.csv")
+ford=ford[which((ford$TIME>=34200) & (ford$TIME<=57600)),]
+aggprice=rep(0,dim(ford)[1])
+return=rep(0,dim(ford)[1])
+no.trade=rep(0,dim(ford)[1])
+aggprice[1]=0
+no.trade[1]=1
+return[1]=0
+time=ford$TIME
+price=ford$PRICE
+day=ford$day
+starttime=time[1]
+
+for(i in 2:dim(ford)[1])
+{
+if(((time[i]-starttime)<=300)&(day[i]==day[i-1])){
+aggprice[i]=aggprice[i-1]+price[i]-price[i-1]
+no.trade[i]=no.trade[i-1]+1}else{
+aggprice[i]=0
+starttime=time[i]
+no.trade[i]=1
+}
+}
+ford=cbind(ford,aggprice,no.trade)
+aggford=c()
+for( i in 2:dim(ford)[1])
+{
+if(ford$no.trade[i]==1){aggford=rbind(aggford,ford[(i-1),])}
+}
+dim(aggford)
+day.ind=c()
+for(i in 2:dim(aggford)[1]){if(aggford$day[i]!=aggford$day[i-1])
++{day.ind=c(day.ind,i)}}
+fordreturn=diff(aggford$PRICE)
+plot(aggford$no.trade,type="l")
+abline(v=day.ind,col="red")
+plot(fordreturn,type="l")
+abline(v=day.ind,col="red")
+acf(aggford$no.trade)
+acf(fordreturn)
+###
+##AGGREGATE  BY 5 MINS for other stocks; follow the details for FORD above.
+gm=read.csv("gm.csv")
+
+######
+#3.(d)
+######
+ford.M=aggford[which(aggford$weekday==2),]
+ford.F=aggford[which(aggford$weekday==6),]
+
+dur.M.ford=diff(ford.M$TIME)
+dur.M.ford=dur.M.ford[dur.M.ford>0]
+dur.F.ford=diff(ford.F$TIME)
+dur.F.ford=dur.F.ford[dur.F.ford>0]
+
+.
+.
+.
+
+###plot duration
+par(mfrow=c(2,1))
+day.ind=c()
+for(i in 2:dim(ford.M)[1]){if(ford.M$day[i]!=ford.M$day[i-1])
++{day.ind=c(day.ind,i)}}
+plot(dur.M.ford,type="l")
+abline(v=day.ind,col="red")
+day.ind=c()
+for(i in 2:dim(ford.F)[1]){if(ford.F$day[i]!=ford.F$day[i-1])
++{day.ind=c(day.ind,i)}}
+plot(dur.F.ford,type="l")
+abline(v=day.ind,col="red")
+
+####
+#3.(e)
+####
+library(fGarch)
+garchFit(formula=~garch(1,1),data=log(dur.M.ford),cond.dist="norm")
+garchFit(formula=~garch(1,1),data=log(dur.F.ford),cond.dist="norm")
+.
+.
+.
+
+#########
+#Chapter 2: Exercise 4
+#########
+#step 1 calclulate volunme weighted average price
+price=ford$PRICE
+time=ford$TIME
+size=ford$SIZE
+date=ford$DATE
+day=ford$day
+weekday=ford$weekday
+k=1
+j=1
+ford_unq=array(0,c(dim(ford)[1],7))
+for (i in 2:dim(ford)[1])
+{
+	if(time[i]==time[i-1]){k=k+1}else
++{vwap=sum(price[(i-k):(i-1)]*size[(i-k):(i-1)])/sum(size[(i-k):(i-1)])
+		ford_unq[j,]=c(date[(i-k)],time[(i-k)],day[(i-k)],
++weekday[(i-k)],size[(i-k)],price[(i-k)],vwap)
+		k=1
+		j=j+1}		
+		
+}
+ford_unq=ford_unq[1:(j-1),]
+#step 2 calculate duration
+time=ford_unq[,2]
+dur=diff(time)
+log_dur=log(dur)
+logd=0
+logmean=rep(0,length(dur))
+j=1
+
+#5-minute average of log duration
+for(i in 2: dim(ford_unq)[1])
+{
+	if(!is.na(log_dur[i-1])&(time[i]-time[j])<=300)
+	{
+		logd=logd+log_dur[i-1]
+	}else{
+		if((i-j-1)!=0){
+		logmean[j:(i-1)]=logd/(i-j-1)}else{logmean[j:(i-1)]=0}
+		logd=0
+		j=i
+	}
+	if(i==dim(ford_unq)[1]){logmean[j:(i-1)]=logd/(i-j)}
+}
+#step3 calculate adjusted duration
+addur=dur/exp(logmean)
+addur[addur<0]=0
+addur[addur>300]=0
+day.ind=c()
+for(i in 2:dim(ford\_unq)[1])\{if(ford\_unq[i,3]!=ford\_unq[(i-1),3])
++\{day.ind=c(day.ind,i)\}\}
+plot(addur,type="l")
+abline(v=day.ind,col="red")
+#####
+#4.(b)
+#####
+#sqrt\_addur=sqrt(addur)
+garchFit(formula=~garch(1,1),data=sqrt\_addur,cond.dist="norm")
+\end{lstlisting}
+\newpage
+\textbf{Chapter 3: Exercise 1}
+\begin{lstlisting}
+d_15stocks=read.csv("d_15stocks.csv")
+d_indexes=read.csv("d_indexes.csv")
+Permno_list=unique(d_15stocks[,1])
+Ticker_list=unique(d_15stocks[,3])
+stock=array(0,c(3323,15))
+for(i in 1:15)
+{
+	stock[,i]=d_15stocks[which(d_15stocks[,1]==Permno_list[i]),4]
+}
+colnames(stock)=as.vector(Ticker_list)
+vw=d_indexes[,2]
+ew=d_indexes[,3]
+#mean,sd and first order autocorrelation for 15 stocks for sample period
+firstAR<-function(x)
+{
+	n=length(x)
+	x1=x[1:(n-1)]
+	x2=x[2:n]
+	f.ar=cor(x1,x2)
+	return(f.ar)
+}
+mean.stock=apply(stock,2,mean)
+sd.stock=apply(stock,2,sd)
+f.ar.stock=apply(stock,2,firstAR)
+mean.vw=mean(vw)
+sd.vw=sd(vw)
+f.ar.vw=firstAR(vw)
+mean.ew=mean(ew)
+sd.ew=sd(ew)
+f.ar.ew=firstAR(ew)
+#m=c(mean.stock,mean.vw,mean.ew)
+# f=c(f.ar.stock,f.ar.vw,f.ar.ew)
+# s=c(sd.stock,sd.vw,sd.ew)
+#for subperiod
+myfun<-function(x)
+{
+	myfun=c(mean(x),sd(x),firstAR(x))
+	return(myfun)
+}
+s.t1=831
+s.t2=1662
+s.t3=2493
+s.t4=3323
+stock.sub1=apply(stock[1:s.t1,],2,myfun)
+stock.sub2=apply(stock[(s.t1+1):s.t2,],2,myfun)
+stock.sub3=apply(stock[(s.t2+1):s.t3,],2,myfun)
+stock.sub4=apply(stock[(s.t3+1):s.t4,],2,myfun)
+mean.stock.sub=cbind(stock.sub1[1,],stock.sub2[1,],
++stock.sub3[1,],stock.sub4[1,])
+sd.stock.sub=cbind(stock.sub1[2,],stock.sub2[2,],
++stock.sub3[2,],stock.sub4[2,])
+f.ar.stock.sub=cbind(stock.sub1[3,],stock.sub2[3,],
++stock.sub3[3,],stock.sub4[3,])
+##plots
+lends=as.vector(Ticker_list)
+matplot(t(mean.stock.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Stock returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+matplot(t(sd.stock.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Standard Deviation of stock returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+matplot(t(f.ar.stock.sub),type="b",pch=20,xlab="Subperiods",
++ylab="First_order AR of stock returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+i.t1=832
+i.t2=1664
+i.t3=2496
+i.t4=3329
+ind=cbind(vw,ew)
+ind.sub1=apply(ind[1:i.t1,],2,myfun)
+ind.sub2=apply(ind[(i.t1+1):i.t2,],2,myfun)
+ind.sub3=apply(ind[(i.t2+1):i.t3,],2,myfun)
+ind.sub4=apply(ind[(i.t3+1):i.t4,],2,myfun)
+mean.ind.sub=cbind(ind.sub1[1,],ind.sub2[1,],ind.sub3[1,],
++ind.sub4[1,])
+sd.ind.sub=cbind(ind.sub1[2,],ind.sub2[2,],ind.sub3[2,],
++ind.sub4[2,])
+f.ar.ind.sub=cbind(ind.sub1[3,],ind.sub2[3,],ind.sub3[3,],
++ind.sub4[3,])
+lends=c("VWRETD","EWRETD")
+
+matplot(t(mean.ind.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Means of indexes returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+matplot(t(sd.ind.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Standard Deviation of indexes returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+matplot(t(f.ar.ind.sub),type="b",pch=20,xlab="Subperiods",
++ylab="First_order AR of indexes returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+#######
+#Exercise 1.b
+#######
+norm_vw=rnorm(length(vw), mean(vw),sd(vw))
+par(mfrow=c(1,2))
+hist(vw,prob=T,nclass=30,xlab="VWRETD",main="")
+lines(density(vw))
+lines(density(norm_vw),col="red")
+
+hist(norm_vw,prob=T,nclass=30,xlab="Normal",main="")
+lines(density(norm_vw))
+
+norm_ew=rnorm(length(ew), mean(ew),sd(ew))
+par(mfrow=c(1,2))
+hist(ew,prob=T,nclass=30,xlab="EWRETD",main="")
+lines(density(ew))
+lines(density(norm_ew),col="red")
+
+hist(norm_ew,prob=T,nclass=30,xlab="Normal",main="")
+lines(density(norm_ew))
+#######
+#Exercise 1.c
+#######
+CIfun<-function(x)
+{
+	n=length(x)
+	xbar=mean(x,na.rm=T)
+	me=qt(0.995,df=n-1)*sd(x,na.rm=T)/sqrt(n)
+	CI=c(xbar-me,xbar+me)
+	return(CI)
+}
+CI.stock=apply(stock,2,CIfun)
+CI.index=apply(ind,2,CIfun)
+#cbind(CI.stock,CI.index)
+stock.sub1=apply(stock[1:s.t1,],2,CIfun)
+stock.sub2=apply(stock[(s.t1+1):s.t2,],2,CIfun)
+stock.sub3=apply(stock[(s.t2+1):s.t3,],2,CIfun)
+stock.sub4=apply(stock[(s.t3+1):s.t4,],2,CIfun)
+CI.stock.sub=rbind(stock.sub1,stock.sub2,stock.sub3,stock.sub4)
+
+
+time=c(rep(c(1,2,3),each=831),rep(4,830))
+stock_t=cbind(stock,time)
+lends=c("Subperiod 1","Subperiod 2","Subperiod 3","Subperiod 4")
+error.bars.by(stock_t[,1:15],time,alpha=0.01,bars=F,
++ylim=c(-0.008,0.008),main="",xlab="",ylab="Confidence
++Intervals",lty=1:5,col=1:6)
+legend(locator(1),lends,lty=1:5,col=1:6)
+
+a=cbind(c(vw[1:i.t1],NA),c(vw[(i.t1+1):i.t2],NA),
++c(vw[(i.t2+1):i.t3],NA),vw[(i.t3+1):i.t4])
+error.bars(a,alpha=0.01,main="",xlab="VWRETD")
+b=cbind(c(ew[1:i.t1],NA),c(ew[(i.t1+1):i.t2],NA),
++c(ew[(i.t2+1):i.t3],NA),ew[(i.t3+1):i.t4])
+error.bars(b,alpha=0.01,main="",xlab="EWRETD")
+
+#######
+#Exercise 1.d
+#######
+library(fBasics)
+SR<-function(x)
+{
+	sr=(max(x)-min(x))/sd(x)
+	return(sr)
+}
+myfun2<-function(x)
+{
+     output=c(skewness(x),kurtosis(x), SR(x))
+     return(output)
+}
+
+
+stock.sub1=apply(stock[1:s.t1,],2,myfun2)
+stock.sub2=apply(stock[(s.t1+1):s.t2,],2,myfun2)
+stock.sub3=apply(stock[(s.t2+1):s.t3,],2,myfun2)
+stock.sub4=apply(stock[(s.t3+1):s.t4,],2,myfun2)
+sk.stock.sub=cbind(stock.sub1[1,],stock.sub2[1,],
++stock.sub3[1,],stock.sub4[1,])
+ku.stock.sub=cbind(stock.sub1[2,],stock.sub2[2,],
++stock.sub3[2,],stock.sub4[2,])
+str.stock.sub=cbind(stock.sub1[3,],stock.sub2[3,],
++stock.sub3[3,],stock.sub4[3,])
+
+lends=as.vector(Ticker_list)
+matplot(t(sk.stock.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Skewness of stock returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+matplot(t(ku.stock.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Kurtosis of stock returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+matplot(t(str.stock.sub),type="b",pch=20,xlab="Subperiods",
++ylab="Studentized range of stock returns",xlim=c(1,5))
+legend(locator(1),lends,lty=1:5,col=1:6,text.width=0.5)
+
+#Test for Skweness (D'Agostino test) and Test for Kurtosis
+(Anscombe-Glynn test)
+library(moments)
+apply(stock,2,agostino.test)
+apply(ind,2,agostino.test)
+m_15stocks=read.csv("m_15stocks.csv")
+m_indexes=read.csv('m_indexes.csv')
+Permno_list_m=unique(m_15stocks[,1])
+Ticker_list_m=unique(m_15stocks[,3])
+
+stock_m=array(0,c(2385,15))
+for(i in 1:15)
+{
+	stock_m[,i]=m_15stocks[which(m_15stocks[,1]==Permno_list_m[i]),4]
+}
+colnames(stock_m)=as.vector(Ticker_list_m)
+apply(stock_m,2,agostino.test)
+apply(ind_m,2,agostino.test)
+##apply Jarque-Beta test
+library(tseries)
+apply(stock,2,Jarque.Bera.test)
+apply(ind,2,Jarque.Bera.test)
+\end{lstlisting}
+\textbf{Chapter 3: Exercise 2}
+\begin{lstlisting}
+##########
+#2.(a)
+##########
+#library(ares)
+AAPL=read.csv("d_aapl.csv")
+P=rev(AAPL$Adj.Close)
+n=length(P)
+return=diff(P)/P[1:(n-1)]
+log_return=log(1+return)
+Box.test(log_return,lag=10,type="Ljung")
+###########
+#2.(b)
+###########
+ar(log_return,method="mle")
+n=length(log_return)
+x1=c(0,log_return[1:(n-1)])
+x2=c(0,0,log_return[1:(n-2)])
+x3=c(rep(0,3),log_return[1:(n-3)])
+x4=c(rep(0,4),log_return[1:(n-4)])
+x5=c(rep(0,5),log_return[1:(n-5)])
+x6=c(rep(0,6),log_return[1:(n-6)])
+ts.lm=lm(log_return~x1+x2+x3+x4+x5+x6)
+summary(ts.lm)
+#######
+#2.(d)
+#######
+library(fUnitRoots)
+urdfTest(log_return,lag=6)
+urdfTest(log(P),lag=6)
+\end{lstlisting}
+\textbf{Chapter 3: Exercise 3}
+\begin{lstlisting}
+#####
+#3.(b)
+#####
+library(fGarch)
+garchFit(formula=~arma(6,0)+garch(1,1),data=log_return,
++cond.dist="norm")
+#####
+#3.(c)
+#####
+garchFit(formula=~arma(6,0)+garch(1,1),data=log_return,
++cond.dist="std")
+#####
+#3.(d)
+#####
+library(rugarch)
+gspec=ugarchspec(variance.model = list(model = "iGARCH",
++garchOrder = c(1, 1),
+submodel = NULL, external.regressors = NULL, variance.targeting = FALSE),  mean.model = list(armaOrder = c(6, 0),include.mean = TRUE, archm = FALSE,  archpow = 1, arfima = FALSE, external.regressors = NULL, archex = FALSE),  distribution.model = "norm")
+ugarchfit(gspec,log_return)
+\end{lstlisting}
+\newpage
+\textbf{Chapter 4: Exercise 5}
+\begin{lstlisting}
+r=read.csv("Rates.csv");
+length<- nrow(r)
+usd<-r$USD_by_INR
+pound<-r$GBP_by_INR
+euro<-r$EUR_by_INR
+flip=1
+LaTeX=1
+sink("myLaTeXtables", append=FALSE, split=FALSE)
+movingAverageSignal=function(series,ndays){
+length=length(series)
+signal=rep(0,length)
+weights<- rep(1/ndays,ndays)
+ma <- as.vector(filter(series, weights,method="convolution",side=1))
+signal[series<ma]=1 # You buy
+signal[series>ma]=-1 # You sell
+return(signal)
+}
+#StartingBalance
+StartingBalance=1000;
+#Moving Signal to Return
+convertSignalToReturn=function(series,signal,amount=100, tradingBasis=0){
+l=length(series)
+stock=rep(0,l); #stock: Number of shares
+cash=rep(StartingBalance,l);
+netLiquidAssets=rep(StartingBalance,l);
+pnl=rep(0,l);
+dailyReturn=rep(0,l);
+for(i in 2:l){
+stock[i]=stock[i-1];
+if(stock[i-1]==0){ #We are open to trade
+if(signal[i]==1) stock[i]<- amount/series[i] #Buy shares worth INR 100
+if(signal[i]==-1) stock[i]<- -amount/series[i] #Sell shares worth INR 100
+}else if((stock[i-1]>0) && (signal[i]=-1)){
+#We have positive stock and we have received signal to sell
+stock[i]=0
+if(flip==1) stock[i]= -amount/series[i];
+}else if((stock[i-1]<0) && (signal[i]=1)){
+#We have negative stock and we have received signal to buy
+stock[i]=0
+if(flip==1) stock[i]= amount/series[i];
+}
+#Transaction Cost= (Difference in stock*price of stock)* tradingBasis
+transactionValue=series[i]*(stock[i]-stock[i-1])
+tc= abs(transactionValue)* tradingBasis
+#The amount of cash = previous cash - amount spent(recd) in buying(selling) 
++ new stock- tc
+cash[i]=cash[i-1] - series[i]*(stock[i]-stock[i-1]) -tc
+netLiquidAssets[i]=cash[i] + series[i]* stock[i]
+dailyReturn[i]=(netLiquidAssets[i]-netLiquidAssets[i-1])/netLiquidAssets[i-1]
+pnl[i]= netLiquidAssets[i]-StartingBalance;
+}
+return(list(cash=cash, netLiquidAssets= netLiquidAssets,
++ pnl=pnl, dailyReturn=dailyReturn))
+}
+# Bollinger Signal (Rule 2)
+bollingerSignal=function(series,ndays,nsd=2){
+length=length(series)
+signal=rep(0,length)
+weights<- rep(1/ndays,ndays)
+weights2<- rev(1:ndays)
+weights2<-weights2/sum(weights2)
+## and apply it as a one-sided moving average calculations, see help(filter)
+bbmiddle <- as.vector(filter(series, weights,method="convolution",side=1))
+bbmiddle2<- as.vector(filter(series, weights2,method="convolution",side=1))
+## use var(x) = E(x^2) - E(x)^2 to compute rolling variances
+v <- filter(series^2, weights, method="convolution", side=1) - bbmiddle^2
+## from which we calculate rolling standard deviations the usual way
+bbsd <- as.vector(sqrt(v))
+bbupper <- bbmiddle2 + nsd*bbsd # upper Bollinger band
+bblower <- bbmiddle2 - nsd*bbsd # lowet Bollinger band
+signal[series< bblower]=1 # You buy
+signal[series> bbupper]=-1 # You sell
+return(signal)
+}
+# Momentum (Rule 1)
+resistanceSupportSignal=function(series,ndays){
+l=length(series)
+signal=rep(0,l)
+start<- ndays+1
+for(i in start:l)
+{
+startIndex=i-ndays
+endIndex=i-1
+pMax=max(series[startIndex:endIndex])
+pMin=min(series[startIndex:endIndex])
+if(series[i]> pMax) {signal[i]=+1} #buy
+if(series[i]< pMin) {signal[i]=-1} #sell
+}
+return(signal)
+}
+# Rule 4
+momentumSignal=function(series,shortDays,longDays){
+length=length(series)
+signal=rep(0,length)
+shortWeights<- rep(1/shortDays, shortDays)
+shortMa <- as.vector(filter(series, shortWeights,method="convolution",side=1))
+longWeights<- rep(1/longDays, longDays)
+longMa <- as.vector(filter(series, longWeights,method="convolution",side=1))
+start<- longDays+1
+for(i in start:length)
+{
+#Cutting from below...
+if ((shortMa[i-1]<longMa[i-1]) && (shortMa[i]>longMa[i]))
+{signal[i]=-1} #Sell... Time to get out
+#Cutting from above...
+if ((shortMa[i-1]>longMa[i-1]) && (shortMa[i]<longMa[i]))
+{signal[i]=1} #Buy... Time to get in
+}
+return(signal)
+}
+# Oscillator Rule
+oscillatorSignal=function(series,ndays){
+l=length(series)
+signal=rep(0,l)
+start<- ndays+1
+for(i in start:l)
+{
+startIndex=i-ndays
+endIndex=i-1
+smallSeries=series[startIndex:endIndex]
+diffSmallSeries=diff(smallSeries)
+U= sum(diffSmallSeries[diffSmallSeries>0])
+D= sum(diffSmallSeries[diffSmallSeries<0])
+D=abs(D)
+RSI=100*(U)/(U+D)
+if(RSI > 70){signal[i]=-1} #You sell
+if(RSI < 30){signal[i]=+1} #You buy
+}
+return(signal)
+}
+doTrade=function(signal.usd,signal.euro,signal.pound, amount, tradingBasis)
+{
+u= convertSignalToReturn(usd,signal.usd, amount, tradingBasis
+cash.usd=u$cash;
+pnl.usd=u$pnl;
+netLiquidAssets.usd=u$netLiquidAssets;
+dailyRet.usd=u$dailyReturn;
+u= convertSignalToReturn(euro, signal.euro, amount, tradingBasis)
+cash.euro=u$cash;
+pnl.euro=u$pnl;
+netLiquidAssets.euro=u$netLiquidAssets;
+dailyRet.euro=u$dailyReturn;
+u= convertSignalToReturn(pound, signal.pound, amount, tradingBasis)
+cash.pound=u$cash;
+pnl.pound=u$pnl;
+netLiquidAssets.pound=u$netLiquidAssets;
+dailyRet.pound=u$dailyReturn;
+netLiquidAssets = netLiquidAssets.usd+ netLiquidAssets.euro 
++ netLiquidAssets.pound
+l= length(netLiquidAssets)
+portfolioReturn=rep(0,l)
+for(i in 2:l)
+{portfolioReturn[i]=
++(netLiquidAssets[i]-netLiquidAssets[i-1])/netLiquidAssets[i-1];}
+pnl= pnl.usd+ pnl.pound+ pnl.euro
+endProfit=pnl[length(pnl)]
+cumulReturn <- prod(portfolioReturn +1) -1
+annualizedCumulReturn <- (1 + cumulReturn)^(1/(l/365))-1
+annualizedReturn <-c()
+for(i in 1:l){
+annualizedReturn[i] <- (1 + portfolioReturn[i])^(1/(i/365))-1
+}
+riskFreeRate <- .03
+excessReturn <- portfolioReturn - (.03/365)
+excessPortfolioReturn=rep(0,l)
+for(i in 1:l){
+excessPortfolioReturn[i] <- portfolioReturn[i] - .03/252
+}
+sharpeRatio = sqrt(252) * mean(excessPortfolioReturn)/sd(excessPortfolioReturn)
+return (list(endPNL=endProfit, cumulReturn = cumulReturn,
+annualizedCumulExcessReturn = annualizedCumulExcessReturn,
+sharpeRatio=sharpeRatio ))
+}
+##########################################
+# Optimality Checks
+# Rule 1
+#
+#####################################
+rule1Wrapper=function(L, amount, tradingBasis)
+{
+signal.usd= movingAverageSignal(usd,ndays=L)
+signal.euro= movingAverageSignal(euro,ndays=L)
+signal.pound= movingAverageSignal(pound,ndays=L)
+ans= doTrade(signal.usd, signal.euro, signal.pound,amount, tradingBasis)
+return(ans)
+}
+#Do a search
+candidateL=c(10,20,30,40,50,100,150,200, 250, 300, 350, 400, 450, 500, 550, 600)
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+# simpleSharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p=rule1Wrapper(L=currentL, amount=100,0)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+# simpleSharpe.perLag[my.i]= p$simpleSharpe
+my.i <- my.i + 1
+}
+rule1.results.noTC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1) {print(xtable(rule1.results.noTC, caption="Rule 1 Results, 
+Moving Average w/ no Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+}
+if(LaTeX==0) { print(rule1.results.noTC) }
+tradingBasis=0.0015
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p=rule1Wrapper(L=currentL, amount=100,tradingBasis)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+rule1.results.TC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1){ print(xtable(rule1.results.TC, caption="Rule 1 Results, 
+Moving Average with Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+}else print(rule1.results.TC)
+##########################################
+#
+# Rule 2
+#
+#####################################
+rule2Wrapper=function(L, amount, tradingBasis)
+{
+signal.usd= bollingerSignal(usd,ndays=L)
+signal.euro= bollingerSignal(euro,ndays=L)
+signal.pound= bollingerSignal(pound,ndays=L)
+ans= doTrade(signal.usd, signal.euro, signal.pound,amount, tradingBasis)
+return(ans)
+}
+#Do a binary search
+candidateL=c(10,20,30,40,50,100,150,200, 250, 300, 350, 400, 450, 500, 550, 600)
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p= rule2Wrapper(L=currentL, amount=100,0)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+rule2.results.noTC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1){ print(xtable(rule2.results.noTC, caption="Rule 2 Results, 
+Bollinger Bands with no Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+}else print(rule2.results.noTC)
+tradingBasis=0.0015
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p=rule2Wrapper(L=currentL, amount=100,tradingBasis)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+rule2.results.TC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1){ print(xtable(rule2.results.TC, caption="Rule 2 Results, 
+Bollinger Bands with Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+} else print(rule2.results.TC)
+##########################################
+#
+# Rule 3
+#
+#####################################
+rule3Wrapper=function(L, amount, tradingBasis)
+{
+signal.usd= resistanceSupportSignal(usd,ndays=L)
+signal.euro= resistanceSupportSignal(euro,ndays=L)
+signal.pound= resistanceSupportSignal(pound,ndays=L)
+ans= doTrade(signal.usd, signal.euro, signal.pound, amount, tradingBasis)
+return(ans)
+}
+#Do a binary search
+candidateL=c(10,20,30,40,50,100,150,200, 250, 300, 350, 400, 450, 500, 550, 600)
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p= rule3Wrapper(L=currentL, amount=100,0)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+rule3.results.noTC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1){ print(xtable(rule3.results.noTC, caption="Rule 3 Results, 
+Resistance-Support w/ no Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+} else {print(rule3.results.noTC)}
+tradingBasis=0.0015
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p=rule3Wrapper(L=currentL, amount=100,tradingBasis)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+rule3.results.TC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1) {print(xtable(rule3.results.TC, caption="Rule 3 Results, 
+Resistance-Support with Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+} else print(rule3.results.TC)
+##########################################
+#
+# Rule 4
+#
+#####################################
+rule4Wrapper=function(shortDays, longDays, amount, tradingBasis)
+{
+signal.usd= momentumSignal(usd,shortDays= shortDays, longDays= longDays)
+signal.euro= momentumSignal(euro,shortDays= shortDays, longDays= longDays)
+signal.pound= momentumSignal(pound,shortDays= shortDays, longDays= longDays)
+ans= doTrade(signal.usd, signal.euro, signal.pound, amount, tradingBasis)
+return(ans)
+}
+#Do a binary search
+candidateLongDays=c(10,20,40,80,160,320,640)
+for(currentLongDay in candidateLongDays)
+{
+candidateShortDays=seq(from=5, to=currentLongDay-1, by=5)
+for(currentShortDay in candidateShortDays)
+{
+p= rule4Wrapper(shortDays= currentShortDay, longDays= currentLongDay, 
+amount=100,0)
+endPNL=p$endPNL
+sharpeRatio=p$sharpeRatio
+# print(sprintf("LongDay=%f, ShortDay=%f, endPNL=%0.4f,sharpeRatio=%0.4f", 
+currentLongDay, currentShortDay, endPNL,sharpeRatio))
+}
+}
+#Do a binary search
+candidateLongDays=c(10,20,40,80,160,320,640)
+for(currentLongDay in candidateLongDays)
+{
+candidateShortDays=seq(from=5, to=currentLongDay-1, by=5)
+for(currentShortDay in candidateShortDays)
+{
+p= rule4Wrapper(shortDays= currentShortDay, longDays= currentLongDay, 
+amount=100, .0015)
+endPNL=p$endPNL
+sharpeRatio=p$sharpeRatio
+# print(sprintf("LongDay=%f, ShortDay=%f, endPNL=%0.4f,sharpeRatio=%0.4f", 
+currentLongDay, currentShortDay, endPNL,sharpeRatio))
+}
+}
+##########################################
+#
+# Partb- Oscillator Rule
+#
+#####################################
+partBWrapper=function(L, amount, tradingBasis)
+{
+signal.usd= oscillatorSignal(usd,ndays=L)
+signal.euro= oscillatorSignal(euro,ndays=L)
+signal.pound= oscillatorSignal(pound,ndays=L)
+ans= doTrade(signal.usd, signal.euro, signal.pound, amount, tradingBasis)
+return(ans)
+}
+#Do a binary search
+candidateL=c(10,20,30,40,50,100,150,200, 250, 300, 350, 400, 450, 500, 550, 600)
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p= partBWrapper(L=currentL, amount=100,0)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+Oscillator.results.noTC <- data.frame(L = candidateL, profits =profits.perLag,
+annualizedSharpe = sharpe.perLag)
+if(LaTeX==1){ print(xtable(Oscillator.results.noTC,
+caption="Oscillator Rule Results, no Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+} else print(Oscillator.results.noTC)
+tradingBasis=0.0015
+profits.perLag <- rep(0,length(candidateL))
+annCumulExReturn <- rep(0,length(candidateL))
+sharpe.perLag <- rep(0,length(candidateL))
+my.i <- 1
+for(currentL in candidateL)
+{
+p=partBWrapper(L=currentL, amount=100,tradingBasis)
+profits.perLag[my.i]=p$endPNL
+annCumulExReturn[my.i] =p$annualizedCumulExcessReturn
+sharpe.perLag[my.i]=p$sharpeRatio
+my.i <- my.i + 1
+}
+Oscillator.results.TC <- data.frame(L = candidateL, profits =profits.perLag,
+sharpe = sharpe.perLag)
+if(LaTeX==1) {print(xtable(Oscillator.results.TC, caption="Oscillator Rule 
+Results with Transaction Costs",
+digits=c(1,2,4,4), display=c("d","d","f","f")))
+} else print(Oscillator.results.TC)
+\end{lstlisting}
+\textbf{Chapter 4: Exercise 5b}
+\begin{lstlisting}
+r=read.csv("~/Documents/Personal/Stats242/Hw/Hw2/Rates.csv")
+length<- nrow(r)
+usd<-r$USD_by_INR
+pound<-r$GBP_by_INR
+euro<-r$EUR_by_INR
+#This function returns end of month indexes of end of month
+getEndOfMonthIndices=function(dateSeries){
+l=length(dateSeries)
+dateT=as.character(dateSeries)
+d=as.Date(dateT,"%Y%m%d")
+m=months(d)
+endOfMonth=rep(-1,l)
+curMonth=1;
+for(i in 2:l)
+{
+if(m[i]!=m[i-1])
+{endOfMonth[i-1]=curMonth; curMonth=curMonth+1}
+}
+return((list(months=m, endOfMonth=endOfMonth)))
+}
+#
+e= getEndOfMonthIndices(r$Date)
+endOfMonthIndex= e$endOfMonth
+getLast3MonthsOfdata=function(curMonth){
+curIndex= which(endOfMonthIndex==curMonth)
+startMonth=curMonth-3
+startIndex= which(endOfMonthIndex==startMonth)+1
+if(startMonth==0){startIndex=1}
+usd.3mths<-usd[startIndex:curIndex]
+pound.3mths<-pound[startIndex:curIndex]
+euro.3mths<-euro[startIndex:curIndex]
+#Now we normalize this series
+usd.3mths.normalize=usd.3mths/usd.3mths[1]
+pound.3mths.normalize= pound.3mths/pound.3mths[1]
+euro.3mths.normalize= euro.3mths/euro.3mths[1]
+return(list(usd.3mths= usd.3mths.normalize, pound.3mths=
+pound.3mths.normalize, euro.3mths= euro.3mths.normalize,usd.const=usd.}
+#Take two normalized series and find the difference and variance
+getPriceDifference=function(series1, series2){
+start1<-1
+end1<-length(series1)
+t1=length(series1)
+pd=sum((series1[start1:end1]-series2[start1:end1])^2)/t1
+x1=((series1[start1:end1]-series2[start1:end1])^2-pd)^2
+x2=sum(x1)/(t1-1)
+stdPD=sqrt(x2)
+return(list(pd= pd, stdPD = stdPD))
+}
+getNext3MonthsOfdata =function(curMonth,u){
+curIndex= which(endOfMonthIndex==curMonth)+1
+endMonth=curMonth+ eligibilityPeriod
+if(endMonth>47){endMonth =47}
+endIndex= which(endOfMonthIndex== endMonth)
+usd.3mths<-usd[curIndex:endIndex]
+pound.3mths<-pound[curIndex:endIndex]
+euro.3mths<-euro[curIndex:endIndex]
+#Now we normalize this series
+usd.3mths.normalize=usd.3mths/u$usd.const
+pound.3mths.normalize= pound.3mths/u$pound.const
+euro.3mths.normalize= euro.3mths/u$euro.const
+return(list(usd.3mths= usd.3mths.normalize, pound.3mths=
+pound.3mths.normalize, euro.3mths= euro.3mths.normalize,usd.orig= usd.}
+###############
+#
+#
+# The Main function that runs simulation
+#
+#
+####################
+StartingBalance=1000;
+KTradingBasis=0;
+Amount=100
+runSimulation =function(name,series1,series2,stdPD,series1.Orig, series2.Orig){
+trade=list();
+trade$name=name;
+trade$series1=series1;
+trade$series2=series2;
+l=length(series1)
+series1Shares=rep(0,l)
+series2Shares=rep(0,l)
+cash=rep(StartingBalance,l)
+netLiquidAssets=rep(StartingBalance,l);
+pnl=rep(0,l)
+dailyReturn=rep(0,l)
+amount=Amount
+#Internal to trade...
+biggerSeries=0
+tradeTime =0; #
+maxTime=l;
+#This is eligibilityPeriod + Convergence Period
+if(eligibilityPeriod>1)
+{maxTime=l-21;} #Reserve last 21 days for convergence period only
+for(i in 2:l)
+{
+series1Shares[i]= series1Shares[i-1]
+series2Shares[i]= series2Shares[i-1]
+if (tradeTime==0 && ((series1[i]-series2[i])^2>2*stdPD) && (i<=maxTime))
+{
+tradeTime=i; #We are now in trade
+print(sprintf("TradeStart=%f",tradeTime))
+#Series 1 is higher than series 2; buy series2 and sell series 1
+if(series1[i]>series2[i])
+{
+series1Shares[i]= -amount/series1.Orig[i]; #Use non-normalized
+series2Shares[i]= amount/series2.Orig[i]; #Use non-normalized
+biggerSeries=1;
+}
+if(series1[i]<series2[i])
+{
+series1Shares[i]= amount/series1.Orig[i]; #Use non-normalized
+series2Shares[i]= -amount/series2.Orig[i]; #Use non-normalized
+biggerSeries =2;
+}
+}
+#Check if pair has converged...
+if(tradeTime >0)
+{
+resetVariables=0
+if(biggerSeries==1 && (series2[i]> series1[i]))
+{resetVariables=1;}
+if(biggerSeries==2 && (series1[i]> series2[i]))
+{resetVariables=2;}
+#if(i-tradeTime>21)
+# {resetVariables=3;}
+#Reset all variables
+if(resetVariables>0)
+{
+print(sprintf("TradeEnd=%f,Reason=%f, pnl=%0.4f",i, resetVariables,pnl[i-1]))
+series1Shares[i]=0;
+series2Shares[i]=0;
+biggerSeries=0;
+tradeTime=0
+}
+}
+#Or if i==l --> just close the trade
+if(i==l && tradeTime>0)
+{
+print(sprintf("TradeEnd=%f,Reason=NoConvergence, pnl=%0.4f",i, pnl[i-1]))
+series1Shares[i]=0;
+series2Shares[i]=0
+}
+#Transaction Cost= (Difference in stock*price of stock)* tradingBasis
+tv1= series1.Orig[i]*(series1Shares[i]-series1Shares[i-1])
+tv2= series2.Orig[i]*(series2Shares[i]-series2Shares[i-1])
+tc= (abs(tv1)+abs(tv2))* KTradingBasis
+#Now calculate the cash in hand...
+cash[i]=cash[i-1]-series1.Orig[i]*(series1Shares[i]-series1Shares[i-1])-
+series2.Orig[i]*(series2Shares[i]-series2Shares[#Calculate NetLiquidAssets in hand
+netLiquidAssets[i]=cash[i] + series1.Orig[i]* series1Shares[i] + series2.Orig[i]* 
+series2Shares[i]
+dailyReturn[i]=(netLiquidAssets[i]-netLiquidAssets[i-1])/netLiquidAssets[i-1]
+pnl[i]= netLiquidAssets[i]-StartingBalance;
+}# end
+trade$series1Shares= series1Shares
+trade$series2Shares= series2Shares
+trade$netLiquidAssets= netLiquidAssets
+trade$dailyReturn = dailyReturn
+trade$portfolioReturn = dailyReturn
+trade$cash=cash
+trade$pnl=pnl
+return(trade)
+}
+##########
+#
+# Let's do trading...
+#
+###########
+runTrade=function(u,v){
+usdAndPound=getPriceDifference(u$usd.3mths, u$pound.3mths)
+usdAndEuro=getPriceDifference(u$usd.3mths, u$euro.3mths)
+poundAndEuro=getPriceDifference(u$pound.3mths, u$euro.3mths)
+minDist=min(usdAndPound$pd, usdAndEuro$pd, poundAndEuro$pd)
+minTrade=1
+if(usdAndEuro$pd ==minDist){minTrade = 2}
+if(poundAndEuro$pd ==minDist){minTrade=3}
+if(minTrade==1)
+{
+print ("USD And Pound")
+trade=runSimulation(name="usdAndPound",v$usd.3mths,v$pound.3mths, usdAndPound$stdPD, v$usd.orig, v$pound.orig)
+}
+if(minTrade==2)
+{
+print ("USD And Euro")
+trade= runSimulation(name="usdAndEuro",v$usd.3mths,v$euro.3mths, usdAndEuro$stdPD, v$usd.orig, v$euro.orig)
+}
+if(minTrade==3)
+{
+print ("Pound And Euro")
+trade= runSimulation(name="poundAndEuro",v$pound.3mths,v$euro.3mths, poundAndEuro$stdPD, v$pound.orig, v$euro.orig)
+}
+return(trade)
+}
+# Now let's start pairs trading for each month...
+eligibilityPeriod=3; #1 month eligibility
+KTradingBasis=0.0015;
+getResults=function()
+{
+totalNumberOfMonths=max(endOfMonthIndex)
+monthsAvailableForTrading= totalNumberOfMonths-eligibilityPeriod
+profit=0; pr=0;
+curMonth=3;
+PNL=0;
+PortfolioReturns=0;
+while(curMonth < monthsAvailableForTrading){
+print(sprintf(">CurMonth=%0.0f, pr=%0.4f, profit=%0.4f",curMonth,pr, profit))
+u=getLast3MonthsOfdata(curMonth)
+v=getNext3MonthsOfdata(curMonth,u)
+trade=runTrade(u,v)
+lastPNL=PNL[length(PNL)];
+thisPNL=trade$pnl
+overallPNL= lastPNL+ thisPNL
+PNL=c(PNL, overallPNL)
+PortfolioReturns=c(PortfolioReturns,trade$dailyReturn)
+pr=trade$pnl[length(trade$pnl)]
+profit=profit+pr
+print(sprintf("<CurMonth=%0.0f, pr=%0.4f, profit=%0.4f",curMonth,pr, profit))
+curMonth=curMonth+eligibilityPeriod
+}
+sharpeRatio=(mean(PortfolioReturns)-0.03/252)/sd(PortfolioReturns)
+sharpeRatio.Ananualized= sharpeRatio*sqrt(252)
+print(sprintf("Profit=%0.4f, SharpeRatio=%0.4f, sharpeRatio.Ananualized=%0.4f", profit, sharpeRatio, sharpeRatio.Ananualized))
+if(eligibilityPeriod>1)
+title="Eligibility Period=2 + additional 1 month for convergence" else
+title="Eligibility Period=1"
+if(KTradingBasis==0)
+title=paste (title, "No Fees") else
+title=paste (title, "With Fees")
+par(mfrow=c(2,1))
+par(oma=c(0,0,2,0))
+plot(PortfolioReturns, main="Portfolio Return",type="l")
+plot(PNL, main="PNL",type="l")
+mtext(title, outer = T, cex = 1)
+}
+# Now, let's start trading
+eligibilityPeriod=1; KTradingBasis=0;
+getResults();
+eligibilityPeriod=3; KTradingBasis=0;
+getResults();
+eligibilityPeriod=1; KTradingBasis=0.0015;
+getResults();
+eligibilityPeriod=3; KTradingBasis=0.0015;
+getResults();
+\end{lstlisting}
+\textbf{Chapter 4: Exercise 5c}
+\begin{lstlisting}
+library('tseries')
+library('urca')
+library('vars')
+r=read.csv("~/Documents/Personal/Stats242/Hw/Hw2/Rates.csv")
+# Co-Integration
+# -Use the log-price as recommended in Vidyamurthy (2004)
+# -
+length<- nrow(r)
+usdInitial=r$USD_by_INR
+poundInitial=r$GBP_by_INR
+euroInitial=r$EUR_by_INR
+usd<-log(r$USD_by_INR)
+pound<-log(r$GBP_by_INR)
+euro<-log(r$EUR_by_INR)
+#This function returns end of month indexes of end of month
+getEndOfMonthIndices=function(dateSeries){
+l=length(dateSeries)
+dateT=as.character(dateSeries)
+d=as.Date(dateT,"%Y%m%d")
+m=months(d)
+endOfMonth=rep(-1,l)
+curMonth=1;
+for(i in 2:l)
+{
+if(m[i]!=m[i-1])
+{endOfMonth[i-1]=curMonth; curMonth=curMonth+1}
+}
+return((list(months=m, endOfMonth=endOfMonth)))
+}
+#
+e= getEndOfMonthIndices(r$Date)
+endOfMonthIndex= e$endOfMonth
+getLast3MonthsOfdata=function(curMonth){
+curIndex= which(endOfMonthIndex==curMonth)
+startMonth=curMonth-3
+startIndex= which(endOfMonthIndex==startMonth)+1
+if(startMonth==0){startIndex=1}
+usd.3mths<-usd[startIndex:curIndex]
+pound.3mths<-pound[startIndex:curIndex]
+euro.3mths<-euro[startIndex:curIndex]
+return(list(usd.3mths= usd.3mths, pound.3mths= pound.3mths, euro.3mths= euro.3mths ))
+}
+getNext3MonthsOfdata =function(curMonth,u){
+curIndex= which(endOfMonthIndex==curMonth)
+endMonth=curMonth+ eligibilityPeriod
+if(endMonth>47){endMonth =47}
+endIndex= which(endOfMonthIndex== endMonth)
+usd.3mths<-usd[curIndex:endIndex]
+pound.3mths<-pound[curIndex:endIndex]
+euro.3mths<-euro[curIndex:endIndex]
+#Now we normalize this series
+usd.orig<-usdInitial[curIndex:endIndex]
+pound.orig<-poundInitial[curIndex:endIndex]
+euro.orig<-euroInitial[curIndex:endIndex]
+return(list(usd.3mths= usd.3mths, pound.3mths= pound.3mths, euro.3mths= euro.3mths,usd.orig= usd.orig, pound.orig= pound.orig,
+}
+isCointegrated=function(s1,s2){
+m<-lm(s1~s2)
+mu<-coef(m)[1]
+beta <- coef(m)[2]
+stdev <-sd(m$resid)
+sprd <- m$resid
+#use adf.test Standarad ADF.Test test instead of Au
+ht <- adf.test(sprd, alternative="stationary", k=0)
+if (ht$p.value < 0.05) {
+^E
+^E
+^E cat("***The spread is likely mean-reverting****\n")
+} else {
+#cat("Not Mean-Reverting\n")
+^E
+^E
+^E beta<-0
+}
+return(list(mu=mu, beta=beta,stdev= stdev))
+}
+multipleCointegrated=function(s1,s2,s3){
+m<-lm(s1~s2+s3)
+mu<-coef(m)[1]
+beta1 <- coef(m)[2]
+beta2 <- coef(m)[3]
+stdev <-sd(m$resid)
+sprd <- m$resid
+#use adf.test
+ht <- adf.test(sprd, alternative="stationary", k=0)
+if (ht$p.value < 0.05) {
+^E
+^E
+^E cat("+++++The spread is likely mean-reverting++++\n")
+} else {
+#cat("-Not reverting-\n")
+^E
+^E
+^E beta1<-0
+beta2<-0
+}
+return(list(mu=mu, beta1=beta1, beta2=beta2, stdev= stdev))
+}
+###############
+#
+#
+# The Main function that runs simulation
+#
+#
+####################
+#StartingBalance
+StartingBalance=1000;
+KTradingBasis=0;
+Amount=100
+runSimulation=function(name, series1, series2, series3=series2, beta, beta2=0, mu, stdev, series1.Orig, series2.Orig, series3.Orig= series2.{
+trade=list();
+l=length(series1)
+beta1=beta
+trade$name=name;
+trade$beta1=beta1;
+trade$beta2=beta2;
+trade$mu=mu;
+trade$stdev=stdev;
+trade$series1=series1;
+trade$series2=series2;
+trade$series3=series3;
+#This is series1 shares
+series1Shares= rep(0,l);
+series2Shares= rep(0,l);
+series3Shares= rep(0,l);
+cash=rep(0,l);
+netLiquidAssets=rep(0,l);
+pnl=rep(0,l);
+dailyReturn=rep(0,l)
+returns=rep(0,l)
+#Plain exit from here...
+if(beta1==0)
+{
+trade$series1Shares=series1Shares;
+trade$series2Shares=series2Shares;
+trade$series3Shares=series3Shares;
+trade$dailyReturn = dailyReturn
+trade$cash=cash
+trade$pnl=pnl
+trade$netLiquidAssets= netLiquidAssets
+return(trade)
+}
+cash=rep(StartingBalance,l);
+netLiquidAssets=rep(StartingBalance,l);
+print(name)
+############
+#
+# Now we run simulation...
+# -Series were co-integrated, so we run simulation here...
+#
+##############
+delta=2*stdev;
+amount=Amount
+tradeTime=0;
+biggerSeries=0;
+maxTime=l;
+#This is eligibilityPeriod + Convergence Period
+if(eligibilityPeriod>1)
+{maxTime=l-21;} #Reserve last 21 days for convergence period only
+for(i in 2:l)
+{
+series1Shares[i]= series1Shares[i-1]
+series2Shares[i]= series2Shares[i-1]
+series3Shares[i]= series3Shares[i-1]
+#We buy a share of one stock and short a share of gamma stock if
+# w_t = p1_t- \beta p2_t > mu_w-Delta
+#Get Price Difference
+pd= series1[i]-beta1*series2[i]-beta2*series3[i] -mu;
+if (tradeTime==0 && (abs(pd)>delta ) && (i<=maxTime))
+{
+tradeTime=i; #We are now in trade
+print(sprintf("TradeStart=%f",tradeTime))
+#Series 1 is higher than series 2;
+# -Sell a share of 1st stock and buy beta share of 2nd stock...
+proportion= amount/(beta1*series2.Orig[i]+beta2*series2.Orig[i]);
+if(pd<0)
+{
+series1Shares[i]= amount/series1.Orig[i]; #Use non-normalized
+series2Shares[i]= -beta1*proportion; #Use non-normalized
+series3Shares[i]= -beta2*proportion; #Use non-normalized
+biggerSeries =2;
+}
+if(pd>0)
+{
+series1Shares[i]= -amount/series1.Orig[i]; #Use non-normalized
+series2Shares[i]= beta1*proportion; #Use non-normalized
+series3Shares[i]= beta2*proportion; #Use non-normalized
+biggerSeries=1;
+}
+}
+#Check if pair has converged...
+if(tradeTime >0)
+{
+resetVariables=0
+if(biggerSeries==1 && (pd<0))
+{resetVariables=1;}
+if(biggerSeries==2 && (pd>0))
+{resetVariables=2;}
+#Reset all variables
+if(resetVariables>0)
+{
+print(sprintf("TradeEnd=%f,Reason=%f, pnl=%0.4f",i, resetVariables,pnl[i-1]))
+series1Shares[i]=0;
+series2Shares[i]=0;
+series3Shares[i]=0;
+biggerSeries=0;
+tradeTime=0
+}
+}
+#Or if i==l --> just close the trade
+if(i==l)
+{
+print(sprintf("TradeEnd=%f,Reason=NoConvergence, pnl=%0.4f",i, pnl[i-1]))
+series1Shares[i]=0;
+series2Shares[i]=0;
+series3Shares[i]=0;
+biggerSeries=0;
+tradeTime=0
+}
+#Transaction Cost= (Difference in stock*price of stock)* tradingBasis
+tv1= series1.Orig[i]*(series1Shares[i]-series1Shares[i-1])
+tv2= series2.Orig[i]*(series2Shares[i]-series2Shares[i-1])
+tv3= series3.Orig[i]*(series3Shares[i]-series3Shares[i-1])
+tc= (abs(tv1)+abs(tv2)+abs(tv3))* KTradingBasis
+#Now calculate the cash in hand...
+cash[i]=cash[i-1]-series1.Orig[i]*(series1Shares[i]-series1Shares[i-1])-series2.Orig[i]*(series2Shares[i]-series2Shares[#Calculate PNL in hand
+netLiquidAssets[i]=cash[i] + series1.Orig[i]* series1Shares[i] + series2.Orig[i]* series2Shares[i]+ series3.Orig[i]*series3Shares[dailyReturn[i]=(netLiquidAssets[i]-netLiquidAssets[i-1])/netLiquidAssets[i-1]
+pnl[i]= netLiquidAssets[i]-StartingBalance;
+}#end of simulation...
+trade$series1Shares= series1Shares
+trade$series2Shares= series2Shares
+trade$series3Shares= series3Shares
+trade$netLiquidAssets= netLiquidAssets
+trade$dailyReturn = dailyReturn
+trade$cash=cash
+trade$pnl=pnl
+return(trade)
+}
+runTrade=function(u,v)
+{
+#For USD And Pound
+x1= isCointegrated(u$usd.3mths,u$pound.3mths);
+trade.usaAndPound= runSimulation(name="usaAndPound",series1=v$usd.3mths,series2=v$pound.3mths,
+beta=x1$beta, mu=x1$mu,
+stdev= x1$stdev,
+series1.Orig=v$usd.orig,
+series2.Orig=v$pound.orig
+)
+x2= isCointegrated(u$pound.3mths,u$euro.3mths);
+trade.poundAndEuro= runSimulation(name="poundAndEuro",series1=v$pound.3mths,series2=v$euro.3mths,
+beta=x2$beta, mu=x2$mu,
+stdev= x2$stdev,
+series1.Orig=v$pound.orig,
+series2.Orig=v$euro.orig
+)
+x3= isCointegrated(u$usd.3mths,u$euro.3mths);
+trade.usaAndEuro= runSimulation(name="usaAndEuro",series1=v$usd.3mths,series2=v$euro.3mths,
+beta=x3$beta, mu=x3$mu,
+stdev= x3$stdev,
+series1.Orig=v$usd.orig,
+series2.Orig=v$euro.orig
+)
+x4= multipleCointegrated(u$usd.3mths,u$pound.3mths,u$euro.3mths);
+trade.all= runSimulation(name="AllThree",series1=v$usd.3mths,series2=v$pound.3mths,series3=v$euro.3mths,
+beta=x4$beta1, beta2=x4$beta2, mu=x4$mu,
+stdev= x4$stdev,
+series1.Orig=v$usd.orig,
+series2.Orig=v$pound.orig,
+series3.Orig=v$euro.orig
+)
+#Overall Profit and Loss
+pnl=rep(0,length(v$usd.3mths))
+portfolioReturns=rep(0,length(pnl))
+netLiquidAssets=rep(0,length(pnl))
+pnl= trade.usaAndPound$pnl+ trade.poundAndEuro$pnl+ trade.usaAndEuro$pnl
+netLiquidAssets= trade.usaAndPound$netLiquidAssets + trade.poundAndEuro$netLiquidAssets + trade.usaAndEuro$netLiquidAssets
+if(KSupportThreeSeries==1)
+{
+pnl=pnl+ trade.all$pnl
+netLiquidAssets= netLiquidAssets+trade.all$netLiquidAssets
+}
+for(i in 2:length(netLiquidAssets))
+{
+portfolioReturns[i]= (netLiquidAssets[i]-netLiquidAssets[i-1])/netLiquidAssets[i-1]
+}
+tradeHappened=0;
+if(x1$beta!=0 || x2$beta!=0|| x3$beta!=0 )
+{tradeHappened=1}
+if(x4$beta1!=0 && KSupportThreeSeries==1 )
+{tradeHappened=1}
+return(list(pnl=pnl, netLiquidAssets= netLiquidAssets, tradeHappened= tradeHappened, portfolioReturns= portfolioReturns ))
+}
+#############################################################################
+#
+#
+#
+#
+#
+#
+#
+#############################################################################
+# Configuration Parameters
+eligibilityPeriod=3
+KTradingBasis=0.0015;
+KSupportThreeSeries=1;
+getResults=function()
+{
+totalNumberOfMonths=max(endOfMonthIndex)
+monthsAvailableForTrading= totalNumberOfMonths-eligibilityPeriod
+profit=0;
+pr=0;
+curMonth=3;
+PNL=0;
+PortfolioReturns=0;
+while(curMonth < monthsAvailableForTrading){
+print(sprintf(">CurMonth=%0.0f, pr=%0.4f, profit=%0.4f",curMonth,pr, profit))
+u=getLast3MonthsOfdata(curMonth)
+v=getNext3MonthsOfdata(curMonth,u)
+trade=runTrade(u,v)
+if(trade$tradeHappened==1)
+{
+lastPNL=PNL[length(PNL)];
+thisPNL=trade$pnl
+overallPNL= lastPNL+ thisPNL
+PNL=c(PNL, overallPNL)
+PortfolioReturns=c(PortfolioReturns,trade$portfolioReturns)
+pr=trade$pnl[length(trade$pnl)]
+profit=profit+pr
+}
+print(sprintf("<CurMonth=%0.0f, pr=%0.4f, profit=%0.4f",curMonth,pr, profit))
+curMonth=ifelse(trade$tradeHappened==0,curMonth+1,curMonth+eligibilityPeriod)
+}
+sharpeRatio=(mean(PortfolioReturns)-0.03/252)/sd(PortfolioReturns)
+sharpeRatio.Ananualized= sharpeRatio*sqrt(252)
+print(sprintf("Profit=%0.4f, SharpeRatio=%0.4f, sharpeRatio.Ananualized=%0.4f", profit, sharpeRatio, sharpeRatio.Ananualized))
+}
+KSupportThreeSeries=0
+# Now, let's start trading
+eligibilityPeriod=1; KTradingBasis=0;
+getResults();
+eligibilityPeriod=3; KTradingBasis=0;
+getResults();
+eligibilityPeriod=1; KTradingBasis=0.0015;
+getResults();
+eligibilityPeriod=3; KTradingBasis=0.0015;
+getResults();
+\end{lstlisting}
+\textbf{Chapter 4: Exercise 5d}
+\begin{lstlisting}
+library('tseries'); library('urca'); library('vars')
+rAll=read.csv("~/Documents/Personal/Stats242/Hw/Hw2/Rates.csv")
+sAll=read.csv("~/Documents/Personal/Stats242/Hw/Hw2/d_SP500.csv")
+excessReturn=0.03/252;
+usd1<- rAll$USD_by_INR
+pound1<-rAll$GBP_by_INR
+euro1<-rAll$EUR_by_INR
+x1=log(usd1); x2=diff(x1); usd=c(0,x2)
+x1=log(pound1); x2=diff(x1); pound=c(0,x2)
+x1=log(euro1); x2=diff(x1); euro=c(0,x2)
+rAll$usd=usd;
+rAll$pound =pound;
+rAll$euro=euro;
+#Find all the elements that are common
+s1=intersect(sAll$caldt, rAll$Date)
+r=subset(rAll, rAll$Date %in% s1)
+s=subset(sAll, sAll$caldt %in% s1)
+length<- nrow(r)
+usd=r$usd
+pound=r$pound
+euro=r$euro
+market=s$vwretd
+usdInitial=r$USD_by_INR
+poundInitial=r$GBP_by_INR
+euroInitial=r$EUR_by_INR
+#This function returns end of month indexes of end of month
+getEndOfMonthIndices=function(dateSeries){
+l=length(dateSeries)
+dateT=as.character(dateSeries)
+d=as.Date(dateT,"%Y%m%d")
+m=months(d)
+endOfMonth=rep(-1,l)
+curMonth=1;
+for(i in 2:l)
+{
+if(m[i]!=m[i-1])
+{endOfMonth[i-1]=curMonth; curMonth=curMonth+1}
+}
+return((list(months=m, endOfMonth=endOfMonth)))
+}
+#
+e= getEndOfMonthIndices(r$Date)
+endOfMonthIndex= e$endOfMonth
+getLast3MonthsOfdata=function(curMonth){
+curIndex= which(endOfMonthIndex==curMonth)
+startMonth=curMonth-3
+startIndex= which(endOfMonthIndex==startMonth)+1
+if(startMonth==0){startIndex=1}
+usd.3mths<-usd[startIndex:curIndex]
+pound.3mths<-pound[startIndex:curIndex]
+euro.3mths<-euro[startIndex:curIndex]
+market.3mths<-market[startIndex:curIndex]
+usd.orig<-usdInitial[startIndex:curIndex]
+pound.orig<-poundInitial[startIndex:curIndex]
+euro.orig<-euroInitial[startIndex:curIndex]
+return(list(usd.3mths= usd.3mths, pound.3mths= pound.3mths, euro.3mths= euro.3mths,market.3mths=market.3mths,usd.orig= usd.orig, }
+getNext3MonthsOfdata =function(curMonth,u){
+curIndex= which(endOfMonthIndex==curMonth)
+endMonth=curMonth+ eligibilityPeriod
+if(endMonth>47){endMonth =47}
+endIndex= which(endOfMonthIndex== endMonth)
+usd.3mths<-usd[curIndex:endIndex]
+pound.3mths<-pound[curIndex:endIndex]
+euro.3mths<-euro[curIndex:endIndex]
+mkt.3mths<-market[curIndex:endIndex]
+usd.orig<-usdInitial[curIndex:endIndex]
+pound.orig<-poundInitial[curIndex:endIndex]
+euro.orig<-euroInitial[curIndex:endIndex]
+return(list(usd.3mths= usd.3mths, pound.3mths= pound.3mths, euro.3mths= euro.3mths,usd.orig= usd.orig, pound.orig= pound.orig, }
+getAPT=function(s1,s2,mkt,s1.orig, s2.orig){
+s1.ex=s1-excessReturn
+s2.ex=s2-excessReturn
+mkt.ex=mkt-excessReturn
+m1<-lm(s1.ex ~ mkt.ex)
+alpha1<- coef(m1)[1]
+beta1 <- coef(m1)[2]
+m2<-lm(s2.ex ~ mkt.ex)
+alpha2<- coef(m2)[1]
+beta2 <- coef(m2)[2]
+dist =(alpha1-alpha2)^2+ (beta1-beta2)^2
+#Let's keep the difference between the two series-squared as our delta
+stdPD=sd((s1.ex-s2.ex)^2)
+x1= s1.orig/s1.orig[1]
+x2= s2.orig/s2.orig[1]
+stdPD=sd((x1-x2)^2)
+return(list(pd= dist, stdPD = stdPD))
+}
+#StartingBalance
+StartingBalance=1000;
+KTradingBasis=0;
+Amount=100
+runSimulation=function(name, series1, series2, delta, series1.Orig, series2.Orig)
+{
+trade=list();
+l=length(series1)
+trade$name=name;
+trade$delta=delta;
+trade$series1=series1-excessReturn;
+trade$series2=series2-excessReturn;
+#This is series1 shares
+series1Shares= rep(0,l);
+series2Shares= rep(0,l);
+cash=rep(StartingBalance,l);
+netLiquidAssets=rep(StartingBalance,l);
+pnl=rep(0,l);
+dailyReturn=rep(0,l)
+series1= series1.Orig/series1.Orig[1]
+series2= series2.Orig/series2.Orig[1]
+############
+#
+# Now we run simulation...
+# -Series were co-integrated, so we run simulation here...
+#
+##############
+amount= Amount
+tradeTime=0
+biggerSeries=0;
+maxTime=l;
+#This is eligibilityPeriod + Convergence Period
+if(eligibilityPeriod>1)
+{maxTime=l-21;} #Reserve last 21 days for convergence period only
+for(i in 2:l)
+{
+series1Shares[i]= series1Shares[i-1]
+series2Shares[i]= series2Shares[i-1]
+theDifferenceSquared=(series1[i]-series2[i])^2
+if (tradeTime==0 && (theDifferenceSquared>2*delta))
+{
+tradeTime=i; #We are now in trade
+print(sprintf("TradeStart=%f",tradeTime))
+proportion= amount/(series1[i]);
+if(series1[i]<series2[i])
+{
+series1Shares[i]= amount/series1.Orig[i]; #Use non-normalized
+series2Shares[i]= -amount/series2.Orig[i]; #Use non-normalized
+biggerSeries =2;
+}
+if(series1[i]>series2[i])
+{
+series1Shares[i]= -amount/series1.Orig[i]; #Use non-normalized
+series2Shares[i]= amount/series2.Orig[i]; #Use non-normalized
+biggerSeries=1;
+}
+}
+#Check if pair has converged...
+if(tradeTime >0)
+{
+resetVariables=0
+if(biggerSeries==1 && (series1[i]<series2[i]))
+{resetVariables=1;}
+if(biggerSeries==2 && (series1[i]>series2[i]))
+{resetVariables=2;}
+#Reset all variables
+if(resetVariables>0)
+{
+print(sprintf("TradeEnd=%f,Reason=%f, pnl=%0.4f",i, resetVariables,pnl[i-1]))
+series1Shares[i]=0;
+series2Shares[i]=0;
+biggerSeries=0;
+tradeTime=0
+}
+}
+if(i==l)
+{
+print(sprintf("TradeEnd=%f,Reason=NoConvergence, pnl=%0.4f",i, pnl[i-1]))
+series1Shares[i]=0;
+series2Shares[i]=0
+biggerSeries=0;
+tradeTime=0
+}
+#Calulate the transaction Cost...
+tv1= series1.Orig[i]*(series1Shares[i]-series1Shares[i-1])
+tv2= series2.Orig[i]*(series2Shares[i]-series2Shares[i-1])
+tc= (abs(tv1)+abs(tv2))* KTradingBasis
+cash[i]=cash[i-1]-series1.Orig[i]*(series1Shares[i]-series1Shares[i-1])-series2.Orig[i]*(series2Shares[i]-series2Shares[#Calculate PNL in hand
+netLiquidAssets[i]=cash[i] + series1.Orig[i]* series1Shares[i] + series2.Orig[i]* series2Shares[i]
+dailyReturn[i]=(netLiquidAssets[i]-netLiquidAssets[i-1])/netLiquidAssets[i-1]
+pnl[i]= netLiquidAssets[i]-StartingBalance;
+}#end of simulation...
+trade$series1Shares= series1Shares
+trade$series2Shares= series2Shares
+trade$netLiquidAssets= netLiquidAssets
+trade$dailyReturn = dailyReturn
+trade$cash=cash
+trade$pnl=pnl
+return(trade)
+}
+#The Maximum simlutanoes trade possible at a time =4
+runTrade=function(u,v)
+{
+usdAndPound= getAPT(u$usd.3mths, u$pound.3mths, u$market.3mths,u$usd.orig,u$pound.orig)
+usdAndEuro= getAPT(u$usd.3mths, u$euro.3mths, u$market.3mths,u$usd.orig,u$euro.orig)
+poundAndEuro= getAPT(u$pound.3mths, u$euro.3mths, u$market.3mths,u$usd.orig,u$euro.orig)
+minDist=min(usdAndPound$pd, usdAndEuro$pd, poundAndEuro$pd)
+minTrade=1
+if(usdAndEuro$pd ==minDist){minTrade = 2}
+if(poundAndEuro$pd ==minDist){minTrade=3}
+if(minTrade==1)
+{
+print ("USD And Pound")
+trade= runSimulation(name="usaAndPound",v$usd.3mths,v$pound.3mths, usdAndPound$stdPD, v$usd.orig, v$pound.orig)
+}
+if(minTrade==2)
+{
+print ("USD And Euro")
+trade= runSimulation(name="usdAndEuro",v$usd.3mths,v$euro.3mths, usdAndEuro$stdPD, v$usd.orig, v$euro.orig)
+}
+if(minTrade==3)
+{
+print ("Pound And Euro")
+trade= runSimulation(name="poundAndEuro",v$pound.3mths,v$euro.3mths, poundAndEuro$stdPD, v$pound.orig, v$euro.orig)
+}
+return(trade)
+}
+#############################################################################
+#
+#
+#############################################################################
+# Now, let's start trading
+eligibilityPeriod=3
+KTradingBasis=0;
+getResults=function()
+{
+# Now let's start pairs trading for each month...
+totalNumberOfMonths=max(endOfMonthIndex)
+monthsAvailableForTrading= totalNumberOfMonths-eligibilityPeriod
+profit=0; pr=0;
+curMonth=3;
+PNL=0;
+PortfolioReturns=0;
+while(curMonth <= monthsAvailableForTrading){
+print(sprintf(">CurMonth=%0.0f, pr=%0.4f, profit=%0.4f",curMonth,pr, profit))
+u=getLast3MonthsOfdata(curMonth)
+v=getNext3MonthsOfdata(curMonth,u)
+trade=runTrade(u,v)
+lastPNL=PNL[length(PNL)];
+thisPNL=trade$pnl
+overallPNL= lastPNL+ thisPNL
+PNL=c(PNL, overallPNL)
+PortfolioReturns=c(PortfolioReturns,trade$dailyReturn)
+pr=trade$pnl[length(trade$pnl)]
+profit=profit+pr
+print(sprintf("<CurMonth=%0.0f, pr=%0.4f, profit=%0.4f",curMonth,pr, profit))
+curMonth=curMonth+eligibilityPeriod
+}
+sharpeRatio=(mean(PortfolioReturns)-0.03/252)/sd(PortfolioReturns)
+sharpeRatio.Ananualized= sharpeRatio*sqrt(252)
+print(sprintf("Profit=%0.4f, SharpeRatio=%0.4f, sharpeRatio.Ananualized=%0.4f", profit, sharpeRatio, sharpeRatio.Ananualized))
+}
+# Now, let's start trading
+eligibilityPeriod=1; KTradingBasis=0;
+getResults();
+eligibilityPeriod=3; KTradingBasis=0;
+getResults();
+eligibilityPeriod=1; KTradingBasis=0.0015;
+getResults();
+eligibilityPeriod=3; KTradingBasis=0.0015;
+getResults();
+\end{lstlisting}
+\textbf{R-Program for Bollinger Bands:}
+\begin{lstlisting}
+rd= read.csv("royaldutch.csv",header=T)
+colnames(rd) = c("Date","Close")
+
+## compute Bollinger Bands on price and scaled volume
+computeBollingerBands <- function(dat, ndays=20, nsd=2)
+{
+
+  ## create a (normalised, but that's just candy)
+      weight vector
+  weights <- rep(1/ndays,ndays)
+  weights2<- rev(1:ndays)
+  weights2<-weights2/sum(weights2)
+  ## and apply it as a one-sided moving average
+     calculations, see help(filter)
+  bbmiddle <- as.vector(filter(dat$Close,
+            weights, method="convolution",side=1))
+  bbmiddle2<- as.vector(filter(dat$Close,
+   weights2, method="convolution",side=1))
+  ## use var(x) = E(x^2) - E(x)^2 to compute
+     rolling variances
+  v <- filter(dat$Close^2, weights, method="convolution",
+              side=1) - bbmiddle^2
+  ## from which we calculate rolling standard deviations
+     the usual way
+  bbsd <- as.vector(sqrt(v))
+
+  bbupper <- bbmiddle2 + nsd*bbsd   # upper Bollinger band
+  bblower <- bbmiddle2 - nsd*bbsd   # lowet Bollinger band
+  ## now extend the data frame with a few new columns
+  D <- cbind(dat, bbmiddle, bbmiddle2,bbsd, bbupper, bblower)
+
+  D                        # return the augmented data frame
+}
+
+bbresult<- computeBollingerBands(rd, ndays=20, nsd=2)
+
+#using band to build trading signals
+buysignal <- rd$Close< bbresult$bblower
+sellsignal <- rd$Close> bbresult$bbupper
+tradeindicator <- rep(0,dim(rd)[1])
+tradeindicator[buysignal]=1
+tradeindicator[sellsignal]=-1
+
+signal2logRet<- function (Close, signal){
+	longposition = which(signal==1)
+	shortposition = which(signal==-1)
+	if(length(longposition)==0) return(NA)
+	lastTrade = longposition[1]
+	i=longposition[1]+1
+\newpage
+	position = 1 #initial long position
+	value = 1 #initial total value is 1
+	#find te first long position
+     while(i<=length(Close)){
+     	if(signal[i]==position*(-1)){
+     		# set new last trading
+     		position = signal[i]#change position
+     		if(signal[i]==-1){#liquidate
+     		value = value * (Close[i]/Close[lastTrade])
+     		#print(c(i,Close[i],Close[lastTrade],value))
+     			}  	
+     		lastTrade = i 	
+     		}
+     		i = i+1
+     	}
+     log(value)
+	}
+signal2logRet(rd$Close,tradeindicator)	
+ #gives a log return of 0.96
+\end{lstlisting} 
+\end{small}
