@@ -1,0 +1,190 @@
+\documentclass[krantz1,ChapterTOCs]{krantz} %See documentation for other class options
+\usepackage{fix-cm}
+%\usepackage{fixltx2e}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath} %bracket command aligns left, the bracket was [fleqn] .  Use \nonumber for no number.
+\usepackage{graphicx}
+\usepackage{subfigure}
+%\usepackage[font=small]{caption}
+\usepackage{placeins}
+\usepackage{multicol}
+\usepackage{indentfirst}
+\usepackage{enumerate}
+\usepackage{listings}
+\usepackage{subfig}
+\usepackage{multirow}
+\usepackage[figuresright]{rotating}
+\usepackage[toc,page]{appendix}
+\usepackage{chngcntr}
+\usepackage{stix}
+\usepackage[autostyle]{csquotes}
+\usepackage{etoolbox}
+\usepackage{threeparttable}
+\usepackage{comment}
+\usepackage{mleftright}
+\usepackage[obeyspaces,spaces]{url}
+\hyphenation{con-sti-tu-tion-al}
+\frenchspacing
+\tolerance=5000
+
+
+%\usepackage{makeidx}
+
+
+\newcommand\Tau{\mathcal{T}}
+
+%For left aligned equations, use \usepackage{nccmath} and use a flush-left environment ala 
+%\begin{fleqn}
+%    \begin{align*}
+%    a&=b\\
+%    &=c
+%    \end{align*}
+%\end{fleqn}
+
+\setlength{\footnotesep}{0.7cm}
+
+\newcommand{\bm}[1]{\mbox{\boldmath{$#1$}}}
+\newcommand{\bX}{\bm{X}}
+\newcommand{\bY}{\bm{Y}}
+\newcommand{\bZ}{\bm{Z}}
+
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Corr}{Corr}
+\DeclareMathOperator{\sgn}{sgn}
+
+\newenvironment{lflalign}{%
+  \def\align@preamble{%
+     &\strut@
+      \setboxz@h{\@lign$\m@th\displaystyle{####}$}%
+      \ifmeasuring@\savefieldlength@\fi
+      \set@field
+      \hfil
+      \tabskip\z@skip
+     &\setboxz@h{\@lign$\m@th\displaystyle{{}####}$}%
+      \ifmeasuring@\savefieldlength@\fi
+      \set@field
+      \hfil
+      \tabskip\alignsep@
+  }
+  \flalign}
+  {\endflalign}
+
+%%%%%%%%%%%%%%%%%%%
+% Definitions, Theorems, etc
+%%%%%%%%%%%%%%%%%%%
+
+\newtheoremstyle{custom}%                % Name
+  {}%                                     % Space above
+  {}%                                     % Space below
+  {}%                                     % Body font
+  {}%                                     % Indent amount
+  {\bfseries}%                            % Theorem head font
+  {.}%                                    % Punctuation after theorem head
+  { }%                                    % Space after theorem head, ' ', or \newline
+  {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}% 
+  
+\theoremstyle{plain}  
+\newtheorem{prop}{Proposition}[section]
+\newtheorem{lem}{Lemma}[section]
+\newtheorem{cor}{Corollary}[section]
+
+%\theoremstyle{definition}
+\theoremstyle{custom}
+\newtheorem{ex}{Example}
+\newtheorem{thm}{Theorem}[chapter]
+\newtheorem{result}{Result}[chapter]
+
+\newtheorem{dfn}{Definition}
+
+\theoremstyle{remark}
+\newtheorem{rem}{Remark}[section] 
+\numberwithin{equation}{chapter}
+
+
+
+
+
+
+\makeatletter
+\newcommand{\pushright}[1]{\ifmeasuring@#1\else\omit\hfill$\displaystyle#1$\fi\ignorespaces}
+\newcommand{\pushleft}[1]{\ifmeasuring@#1\else\omit$\displaystyle#1$\hfill\fi\ignorespaces}
+\newcommand{\specialcell}[1]{\ifmeasuring@#1\else\omit$\displaystyle#1$\ignorespaces\fi}
+\makeatother
+
+\newcommand\itemquote{\lq\lq}
+\robustify\itemquote
+
+\newenvironment{modenumerate}
+  {\enumerate\setupmodenumerate}
+  {\endenumerate}
+
+\newif\ifmoditem
+\newcommand{\setupmodenumerate}{%
+  \global\moditemfalse
+  \let\origmakelabel\makelabel
+  \def\moditem##1{\global\moditemtrue\def\mesymbol{##1}\item}%
+  \def\makelabel##1{%
+    \origmakelabel{\ifmoditem\llap{\mesymbol\enspace}\fi##1}%
+    \global\moditemfalse}%
+}
+
+\makeindex
+
+
+
+%%%%%%%%%%%%%
+%Table Counter
+%%%%%%%%%%%%%
+\counterwithin{table}{chapter}
+\counterwithin{figure}{chapter}
+
+
+
+
+%%%%%%%%%%%%%
+%Document
+%%%%%%%%%%%%%
+
+\include{frontmatter/preamble} %place custom commands and macros here
+\begin{document}
+\frontmatter
+%Title: Algorithmic Trading and Quantitative Strategies
+\title{Algorithmic Trading and Quantitative Strategies \\ \vspace{3cm}  (Version: \today)} %This is a placeholder titlepage, it will not be final.
+
+\author{\scalebox{1.5}{ Raja Velu\footnote{Department of Finance \hfill \newline \indent \indent Whitman School of Management \hfill \newline \indent \indent Syracuse University} and Maxence Hardy\footnote{Linear Quantitative Research \hfill \newline \indent \indent Global Equities \hfill \newline \indent \indent J.P. Morgan - Hong Kong}}}
+\date{}
+\maketitle
+
+\cleardoublepage
+\setcounter{page}{7} %previous pages will be reserved for frontmatter to be added in later.
+\tableofcontents
+\raggedbottom
+\mainmatter
+\include{chapters/chapter1/ch1}
+
+
+\part{Data Analytics: Models and Empirics}
+\include{chapters/chapter2/ch2}
+
+\part{Trading Algorithms}
+\include{chapters/chapter3/ch3}
+\include{chapters/chapter4/ch4}
+\include{chapters/chapter5/ch5}
+
+\part{Execution Algorithms}
+\include{chapters/chapter6/ch6}
+\include{chapters/chapter7/ch7}
+
+\part{Informatics and Regulatory Issues}
+\include{chapters/chapter8/ch8}
+\include{chapters/chapter9/ch9}
+\include{chapters/chapter10/ch10}
+%\include{chapters/chapter11/ch11}
+%\include{chapters/appendix/appendix}
+\bibliographystyle{plain}
+\bibliography{bibtex}
+\end{document}
